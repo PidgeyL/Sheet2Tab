@@ -197,8 +197,6 @@ def read_sheet(path):
 
         write_and_show('res.png', img)
 
-    for note_group in note_groups:
-        print([ note.note + " " + note.sym for note in note_group])
     return note_groups
 
 

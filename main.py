@@ -1,5 +1,9 @@
 # Imports
 import os
+import json
+import warnings
+
+warnings.filterwarnings('ignore')
 
 from cmd import Cmd
 from PIL import Image
@@ -46,10 +50,6 @@ class Interactive(Cmd):
     do_EOF = do_exit
 
     # Status commands
-    def do_set_test_song(self, vars):
-        self.song = [['f3', 'a3'],['d4'],['g3', 'd3', 'g3', 'd3']]
-
-
     def do_print_status(self, vars):
         '''Show the currently loaded settings'''
         range = sorted(self.notes.keys(), key=lambda x: x[1]+x[0]+x[2:])
@@ -83,8 +83,20 @@ class Interactive(Cmd):
             print(" -> Instrument not loaded")
             self.notes = {}
             self.instrument = None
+            return
         if self.notes == {}:
-            print("WARNING: No notes found for instrument %s"%instrument)
+            print("WARNING: No notes found for instrument %s"%vars)
+
+
+
+    def do_set_sheet_width(self, vars):
+        '''Set width of the tab sheet'''
+        try:
+            width = int(vars)
+        except:
+            print("Usage: set_sheet_width <width in pixels>"); return
+        self.tab_width = width
+
 
 
     def do_load_sheet(self, vars):
@@ -92,6 +104,25 @@ class Interactive(Cmd):
         self.song  = SheetReader.read_sheet(vars)
         self.song  = [[note.note for note in notes] for notes in self.song]
         self.sheet = vars
+
+
+
+    def do_write_song_notes(self, vars):
+        '''Write song notes to a flat file for later use (debug option)'''
+        if not vars:
+            print("Usage: write_song_notes <file>"); return
+        if self.song == None:
+            print("No song loaded"); return
+        open(vars,'w').write(json.dumps(self.song, indent=2))
+
+
+
+    def do_read_song_notes(self, vars):
+        '''Read song notes from a flat file generated before (debug option)'''
+        if not vars:
+            print("Usage: read_song_notes <file>"); return
+        self.song = json.loads(open(vars, 'r').read())
+
 
 
     def do_write_tabs(self, vars):
@@ -149,14 +180,14 @@ class Interactive(Cmd):
                   result.paste(img, (x_offset, y_offset))
                   x_offset += img.width
               else: # New line -> expand picture
-                  x_offset       = 0
                   result_height += tab_line_height
                   result_bak     = Image.new('RGB', (tab_width, result_height), color=bgcolor)
-                  result_bak.paste(result, (0, y_offset))
+                  result_bak.paste(result, (0, 0))
                   y_offset      += tab_line_height
                   result_bak.paste(img, (0, y_offset))
+                  x_offset       = img.width
                   result = result_bak
-
+              # result.save(str(i)+'.png') # Debug option
         result.save(vars)
 
 Interactive().cmdloop()
